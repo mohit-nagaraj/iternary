@@ -3,14 +3,14 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.orm import Session
-from app.database import SessionLocal, engine
+from app.database import SessionLocal, engine, Base
 from app import models
 from app.schemas import ItineraryCreate, DayCreate, ActivityCreate, TransferCreate, AccommodationCreate
 
 def seed_data():
     db = SessionLocal()
     
-    models.Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
     
     phuket_2_nights = ItineraryCreate(
         name="Phuket Beach Getaway",

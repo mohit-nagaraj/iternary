@@ -1,85 +1,60 @@
-from typing import List, Optional
-from pydantic import BaseModel
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date
+from sqlalchemy.orm import relationship
 
-class ActivityBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    location: str
-    duration_hours: float
+from app.database import Base
 
-class ActivityCreate(ActivityBase):
-    pass
-
-class Activity(ActivityBase):
-    id: int
-    day_id: int
+class Itinerary(Base):
+    __tablename__ = "itineraries"
     
-    class Config:
-        orm_mode = True
-
-class TransferBase(BaseModel):
-    from_location: str
-    to_location: str
-    transfer_type: str
-
-class TransferCreate(TransferBase):
-    pass
-
-class Transfer(TransferBase):
-    id: int
-    day_id: int
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    destination = Column(String, nullable=False)
+    duration_nights = Column(Integer, nullable=False)
+    is_recommended = Column(Boolean, default=False)
     
-    class Config:
-        orm_mode = True
+    days = relationship("Day", back_populates="itinerary", cascade="all, delete-orphan")
 
-class AccommodationBase(BaseModel):
-    hotel_name: str
-    location: str
-
-class AccommodationCreate(AccommodationBase):
-    pass
-
-class Accommodation(AccommodationBase):
-    id: int
-    day_id: int
+class Day(Base):
+    __tablename__ = "days"
     
-    class Config:
-        orm_mode = True
-
-class DayBase(BaseModel):
-    day_number: int
-
-class DayCreate(DayBase):
-    accommodation: Optional[AccommodationCreate] = None
-    transfers: List[TransferCreate] = []
-    activities: List[ActivityCreate] = []
-
-class Day(DayBase):
-    id: int
-    itinerary_id: int
-    accommodation: Optional[Accommodation] = None
-    transfers: List[Transfer] = []
-    activities: List[Activity] = []
+    id = Column(Integer, primary_key=True, index=True)
+    day_number = Column(Integer, nullable=False)
+    itinerary_id = Column(Integer, ForeignKey("itineraries.id"))
     
-    class Config:
-        orm_mode = True
+    itinerary = relationship("Itinerary", back_populates="days")
+    accommodation = relationship("Accommodation", back_populates="day", uselist=False, cascade="all, delete-orphan")
+    transfers = relationship("Transfer", back_populates="day", cascade="all, delete-orphan")
+    activities = relationship("Activity", back_populates="day", cascade="all, delete-orphan")
 
-class ItineraryBase(BaseModel):
-    name: str
-    destination: str
-    duration_nights: int
-
-class ItineraryCreate(ItineraryBase):
-    days: List[DayCreate]
-    is_recommended: Optional[bool] = False
-
-class Itinerary(ItineraryBase):
-    id: int
-    days: List[Day] = []
-    is_recommended: bool
+class Accommodation(Base):
+    __tablename__ = "accommodations"
     
-    class Config:
-        orm_mode = True
+    id = Column(Integer, primary_key=True, index=True)
+    hotel_name = Column(String, nullable=False)
+    location = Column(String, nullable=False)
+    day_id = Column(Integer, ForeignKey("days.id"))
+    
+    day = relationship("Day", back_populates="accommodation")
 
-class RecommendedItineraryRequest(BaseModel):
-    duration_nights: int
+class Transfer(Base):
+    __tablename__ = "transfers"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    from_location = Column(String, nullable=False)
+    to_location = Column(String, nullable=False)
+    transfer_type = Column(String, nullable=False)  # e.g., car, boat, etc.
+    day_id = Column(Integer, ForeignKey("days.id"))
+    
+    day = relationship("Day", back_populates="transfers")
+
+class Activity(Base):
+    __tablename__ = "activities"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    location = Column(String, nullable=False)
+    duration_hours = Column(Float, nullable=False)
+    day_id = Column(Integer, ForeignKey("days.id"))
+    
+    day = relationship("Day", back_populates="activities")
